@@ -7,33 +7,62 @@ import (
 	"time"
 )
 
+const url = "http://www.baidu.com"
 type Retriever interface {
 	Get(url string) string
 }
 
-func download(r Retriever) string {
-	return r.Get("http://www.baidu.com")
+type Poster interface {
+	Post(url string, form map[string]string) string
 }
+
+type RetrieverPoster interface {
+	Retriever
+	Poster
+}
+
+func download(r Retriever) string {
+	return r.Get(url)
+}
+
+func post(poster Poster) {
+	poster.Post(url, map[string]string{
+		"name":  "thomas",
+		"skill": "go, php",
+	})
+}
+
+func session(s RetrieverPoster) string {
+	s.Post(url, map[string]string{
+		"name": "thomas",
+	})
+	return s.Get(url)
+}
+
 func main() {
 	var r Retriever
-	r = mock.Retriever{"this is mock data"}
+	r = &mock.Retriever{"this is mock data"}
 	inspect(r)
 	r = &real.Retriever{
 		UserAgent: "iPhone",
 		TimeOut:   time.Minute,
 	}
 	inspect(r)
-	if realRetriever,ok := r.(*real.Retriever); ok {
+	if realRetriever, ok := r.(*real.Retriever); ok {
 		fmt.Println(realRetriever.TimeOut)
 	} else {
 		fmt.Println("not real retriever")
 	}
+	retriever := mock.Retriever{"test"}
+	fmt.Println(session(&retriever))
+
+
 }
 
 func inspect(r Retriever) {
 	fmt.Printf("%T %v\n", r, r)
 	switch v := r.(type) {
-	case mock.Retriever:
+	case *mock.Retriever:
 		fmt.Println("Contents: ", v.Contents)
 	case *real.Retriever:
 		fmt.Println("UserAgent: ", v.UserAgent)
